@@ -5,6 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - test_mobile_ci
   workflow_dispatch:
     inputs:
       build_ubuntu:
