@@ -19,6 +19,10 @@ on:
         description: "Build Windows"
         required: false
         default: "true"
+      build_android:
+        description: "Build Android"
+        required: false
+        default: "true"
       release_tags:
         description: "Release Page Tags"
         required: true
@@ -136,3 +140,39 @@ jobs:
           cd dist/
           $file=Get-ChildItem -Filter *.exe
           gh release upload ${{ github.event.inputs.release_tags }} $file.name --clobber
+  
+  build_android:
+    name: Android
+    runs-on: ubuntu-22.04
+    if: ${{ github.event.inputs.build_android == 'true' }}
+    strategy:
+      matrix:
+        rust: [1.85]
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install Rust-stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          rustflags: ""
+          cache: true
+
+      - name: Install cargo-makepad
+        run: |
+          cargo install --force --git https://github.com/makepad/makepad.git --branch dev cargo-makepad
+        
+      - name: Install toolchain
+        run: |
+          cargo makepad android install-toolchain
+
+      - name: Build
+        run: |
+          cargo makepad android build -p robrix --release
+
+      - name: Upload Dist
+        run: |
+          cd ./target/makepad-android-apk/robrix/apk
+          gh release upload ${{ github.event.inputs.release_tags }} *.apk --clobber
