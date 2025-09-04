@@ -261,7 +261,7 @@ jobs:
 
       - name: Build for iOS 
         run: |
-
+          # Temp update app name in Cargo.toml, because the app name is "_moly_app", the makepad tool parse not support renaming, so we need to change it manually
           sed -i '' 's/name = "_moly_app"/name = "moly"/' Cargo.toml
           
           if [[ "${{ github.event.inputs.build_ios }}" == "simulator" ]]; then
