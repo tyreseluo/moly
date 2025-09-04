@@ -283,6 +283,7 @@ jobs:
           # Get Moly version
           VERSION=$(cargo metadata --no-deps --format-version 1 --frozen | jq -r '.packages[0].version')
           if [[ "${{ github.event.inputs.build_ios }}" == "simulator" ]]; then
+            ls ./target/makepad-apple-app/aarch64-apple-ios-sim/release
             cd ./target/makepad-apple-app/aarch64-apple-ios-sim/release
             zip -r "Moly-${VERSION}-ios-simulator.zip" .
             gh release upload ${{ github.event.inputs.release_tags }} "Moly-${VERSION}-ios-simulator.zip" --clobber
