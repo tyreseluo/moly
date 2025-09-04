@@ -27,7 +27,7 @@ on:
         description: "Build iOS (including simulator and real devices)"
         required: false
         type: choice
-        default: "true"
+        default: "all"
         options:
           - "all"
           - "release"
