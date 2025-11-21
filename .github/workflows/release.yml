@@ -252,7 +252,7 @@ jobs:
       - name: Build for iOS
         run: |
           cargo makepad apple ios \
-            --org=com.moxin-org \
+            --org=org.moxin \
             --app=moly \
             --profile=$PROFILE_PATH \
             --cert=$CERT_FINGERPRINT \
