@@ -2783,7 +2783,7 @@ dependencies = [
 
 [[package]]
 name = "moly"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -2817,7 +2817,7 @@ dependencies = [
 
 [[package]]
 name = "moly-kit"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "async-stream",
  "base64",
@@ -2846,7 +2846,7 @@ dependencies = [
 
 [[package]]
 name = "moly-mini"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "env_logger",
  "futures",
