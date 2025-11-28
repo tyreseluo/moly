@@ -30,6 +30,6 @@ pub fn check_for_update_and_print() -> Result<()> {
             println!("No update available");
         }
     }
-
+    // Test output
     Ok(())
 }
