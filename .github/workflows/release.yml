@@ -99,13 +99,13 @@ jobs:
           SIG_JSON=$(jq -Rs . < "$SIG_FILE")
           ASSET_NAME=$(basename "$APPIMAGE")
           cat > "latest-linux-${ARCH}.json" <<EOF
-{
-  "version": "${VERSION}",
-  "url": "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET_NAME}",
-  "signature": ${SIG_JSON},
-  "format": "appimage"
-}
-EOF
+          {
+            "version": "${VERSION}",
+            "url": "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET_NAME}",
+            "signature": ${SIG_JSON},
+            "format": "appimage"
+          }
+          EOF
 
       - name: Upload Dist
         env:
@@ -174,13 +174,13 @@ EOF
           SIG_JSON=$(jq -Rs . < "$SIG_FILE")
           ASSET_NAME=$(basename "$APP_ARCHIVE")
           cat > "latest-macos-${ARCH}.json" <<EOF
-{
-  "version": "${VERSION}",
-  "url": "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET_NAME}",
-  "signature": ${SIG_JSON},
-  "format": "app"
-}
-EOF
+          {
+            "version": "${VERSION}",
+            "url": "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET_NAME}",
+            "signature": ${SIG_JSON},
+            "format": "app"
+          }
+          EOF
 
       - name: Upload Dist
         env:
