@@ -24,6 +24,11 @@ fn main() {
     // Initialize the logger
     env_logger::init();
 
+    // Lightweight update check; replace the public key in `updater.rs` before relying on it.
+    if let Err(err) = moly::updater::check_for_update_and_print() {
+        log::warn!("Update check failed: {err}");
+    }
+
     robius_url_handler::register_handler(|incoming_url| {
         use std::io::Write;
 
