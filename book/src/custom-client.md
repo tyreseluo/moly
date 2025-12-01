@@ -1,4 +1,9 @@
 # Implement your own client
+
+```admonish warning
+This documentation covers an older API of Moly Kit. The documentation will be reworked. For reference, commit `1eb9630` is the last commit where this documentation was valid.
+```
+
 ## Prerequisites
 This guide assumes you have already read the [Quickstart](quickstart.md).
 
