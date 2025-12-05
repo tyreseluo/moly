@@ -1,16 +1,16 @@
 use crate::data::bot_fetcher;
 use makepad_widgets::*;
-use moly_kit::{BotId, protocol::ClientError};
+use moly_kit::prelude::*;
 use serde::{Deserialize, Serialize};
 
-pub type ProviderID = String;
+pub type ProviderId = String;
 
 /// Represents an AI provider
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Provider {
     /// Unique identifier for the provider
     #[serde(default)]
-    pub id: ProviderID,
+    pub id: ProviderId,
     pub name: String,
     /// Refered as API host in the UI
     pub url: String,
@@ -97,7 +97,7 @@ impl ProviderConnectionStatus {
         let error_string = error.to_string().to_lowercase();
 
         let user_message = match error.kind() {
-            moly_kit::protocol::ClientErrorKind::Network => {
+            ClientErrorKind::Network => {
                 if error_msg.contains("invalid url")
                     || error_msg.contains("invalid host")
                     || error_msg.contains("name resolution")
@@ -119,11 +119,11 @@ impl ProviderConnectionStatus {
                     "Network error - check your connection and URL".to_string()
                 }
             }
-            moly_kit::protocol::ClientErrorKind::Format => {
+            ClientErrorKind::Format => {
                 "Something is wrong in our end, please file an issue if you think this is an error"
                     .to_string()
             }
-            moly_kit::protocol::ClientErrorKind::Response => {
+            ClientErrorKind::Response => {
                 if error_string.contains("401") || error_string.contains("unauthorized") {
                     "Unauthorized, check your API key".to_string()
                 } else if error_string.contains("400") || error_string.contains("bad request") {
@@ -143,7 +143,7 @@ impl ProviderConnectionStatus {
                     format!("Server error: {}", error.message())
                 }
             }
-            moly_kit::protocol::ClientErrorKind::Unknown => error.message().to_string(),
+            ClientErrorKind::Unknown => error.message().to_string(),
         };
 
         ProviderConnectionStatus::Error(user_message)
@@ -152,17 +152,21 @@ impl ProviderConnectionStatus {
 
 #[derive(Debug, DefaultNone, Clone)]
 pub enum ProviderFetchModelsResult {
-    Success(ProviderID, Vec<ProviderBot>),
-    Failure(ProviderID, ClientError),
+    Success(ProviderId, Vec<ProviderBot>),
+    Failure(ProviderId, ClientError),
     None,
 }
 
 #[derive(Live, LiveHook, PartialEq, Debug, LiveRead, Serialize, Deserialize, Clone)]
+// Note: Aliases are used to support old casing styles in saved data.
 pub enum ProviderType {
     #[pick]
-    OpenAI,
-    OpenAIImage,
-    OpenAIRealtime,
+    #[serde(alias = "OpenAI")]
+    OpenAi,
+    #[serde(alias = "OpenAIImage")]
+    OpenAiImage,
+    #[serde(alias = "OpenAIRealtime")]
+    OpenAiRealtime,
     MoFa,
     DeepInquire,
     MolyServer,
@@ -171,9 +175,9 @@ pub enum ProviderType {
 impl ProviderType {
     pub fn to_human_readable(&self) -> &str {
         match self {
-            ProviderType::OpenAI => "OpenAI",
-            ProviderType::OpenAIImage => "OpenAI (Image Generation)",
-            ProviderType::OpenAIRealtime => "OpenAI (Realtime)",
+            ProviderType::OpenAi => "OpenAI",
+            ProviderType::OpenAiImage => "OpenAI (Image Generation)",
+            ProviderType::OpenAiRealtime => "OpenAI (Realtime)",
             ProviderType::MoFa => "MoFa",
             ProviderType::DeepInquire => "DeepInquire",
             ProviderType::MolyServer => "MolyServer",
@@ -183,6 +187,6 @@ impl ProviderType {
 
 impl Default for ProviderType {
     fn default() -> Self {
-        ProviderType::OpenAI
+        ProviderType::OpenAi
     }
 }

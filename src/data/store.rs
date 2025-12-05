@@ -1,9 +1,9 @@
 use crate::app::app_runner;
-use crate::data::providers::ProviderID;
+use crate::data::providers::ProviderId;
 use crate::shared::actions::ChatAction;
 use crate::shared::bot_context::BotContext;
 
-use super::chats::chat::ChatID;
+use super::chats::chat::ChatId;
 use super::downloads::download::DownloadFileAction;
 use super::mcp_servers::McpServersConfig;
 use super::moly_client::MolyClient;
@@ -14,14 +14,13 @@ use super::supported_providers;
 use super::{chats::Chats, downloads::Downloads, search::Search};
 use chrono::{DateTime, Utc};
 use makepad_widgets::{Action, ActionDefaultRef, DefaultNone};
-use moly_kit::utils::asynchronous::spawn;
+use moly_kit::ai_kit::utils::asynchronous::spawn;
+use moly_kit::prelude::*;
 
 use super::providers::{Provider, ProviderConnectionStatus};
-use moly_kit::mcp::mcp_manager::McpManagerClient;
-use moly_protocol::data::{Author, File, FileID, Model, ModelID, PendingDownload};
+use moly_protocol::data::{Author, File, FileId, Model, ModelId, PendingDownload};
 
 use makepad_widgets::*;
-use moly_kit::*;
 
 #[allow(dead_code)]
 const DEFAULT_MOFA_ADDRESS: &str = "http://localhost:8000";
@@ -42,7 +41,7 @@ pub struct FileWithDownloadInfo {
 
 #[derive(Clone, Debug)]
 pub struct ModelWithDownloadInfo {
-    pub model_id: ModelID,
+    pub model_id: ModelId,
     pub name: String,
     pub summary: String,
     pub size: String,
@@ -154,7 +153,7 @@ impl Store {
         });
     }
 
-    pub fn get_chat_associated_bot(&self, chat_id: ChatID) -> Option<BotId> {
+    pub fn get_chat_associated_bot(&self, chat_id: ChatId) -> Option<BotId> {
         self.chats
             .get_chat_by_id(chat_id)
             .and_then(|chat| chat.borrow().associated_bot.clone())
@@ -209,7 +208,7 @@ impl Store {
         }
     }
 
-    pub fn delete_file(&mut self, file_id: FileID) {
+    pub fn delete_file(&mut self, file_id: FileId) {
         let moly_client = self.moly_client.clone();
         spawn(async move {
             let Ok(()) = moly_client.eject_model().await else {
@@ -287,7 +286,7 @@ impl Store {
         }
     }
 
-    pub fn delete_chat(&mut self, chat_id: ChatID) {
+    pub fn delete_chat(&mut self, chat_id: ChatId) {
         self.chats.remove_chat(chat_id);
 
         // TODO Decide proper behavior when deleting the current chat
@@ -403,7 +402,7 @@ impl Store {
                     && (pp.api_key.is_some()
                         || pp.provider_type == ProviderType::MoFa
                         || pp.provider_type == ProviderType::DeepInquire
-                        || pp.provider_type == ProviderType::OpenAIRealtime
+                        || pp.provider_type == ProviderType::OpenAiRealtime
                         || pp.url.starts_with("http://localhost"))
             })
             .map(|pp| {
@@ -445,7 +444,7 @@ impl Store {
         self.reload_bot_context();
     }
 
-    pub fn remove_provider(&mut self, provider_id: &ProviderID) {
+    pub fn remove_provider(&mut self, provider_id: &ProviderId) {
         self.chats.remove_provider(provider_id);
         self.preferences.remove_provider(provider_id);
     }

@@ -2,15 +2,9 @@ use makepad_widgets::*;
 use std::cell::{Ref, RefMut};
 use std::sync::{Arc, Mutex};
 
-use crate::controllers::chat::{
-    ChatController, ChatControllerPlugin, ChatControllerPluginRegistrationId, ChatState,
-    ChatStateMutation, ChatTask,
-};
-use crate::mcp::mcp_manager::display_name_from_namespaced;
+use crate::ai_kit::mcp::mcp_manager::display_name_from_namespaced;
+use crate::prelude::*;
 use crate::utils::makepad::events::EventExt;
-use crate::utils::vec::VecMutation;
-use crate::widgets::moly_modal::MolyModalWidgetExt;
-use crate::*;
 
 live_design!(
     use link::theme::*;

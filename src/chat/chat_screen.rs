@@ -1,12 +1,12 @@
 use makepad_widgets::*;
-use moly_kit::protocol::Picture;
-use moly_kit::utils::asynchronous::spawn;
-use moly_kit::*;
+use moly_kit::ai_kit::utils::asynchronous::spawn;
+use moly_kit::prelude::*;
 
 use std::collections::HashMap;
 
 use crate::data::bot_fetcher::should_include_model;
-use crate::data::providers::{Provider, ProviderBot, ProviderID, ProviderType};
+use crate::data::deep_inquire_client::DeepInquireClient;
+use crate::data::providers::{Provider, ProviderBot, ProviderId, ProviderType};
 use crate::data::store::Store;
 use crate::data::supported_providers::{self, SupportedProvider};
 use crate::settings::provider_view::ProviderViewWidgetExt;
@@ -156,7 +156,7 @@ impl ChatScreen {
                 .filter(|(_, p)| p.enabled && has_valid_credentials(p))
             {
                 let client: Option<Box<dyn BotClient>> = match provider.provider_type {
-                    ProviderType::OpenAI | ProviderType::MolyServer | ProviderType::MoFa => {
+                    ProviderType::OpenAi | ProviderType::MolyServer | ProviderType::MoFa => {
                         create_openai_client(
                             provider,
                             &supported_providers_list,
@@ -166,14 +166,14 @@ impl ChatScreen {
                             ClientFilter::ChatModels,
                         )
                     }
-                    ProviderType::OpenAIImage => create_openai_image_client(
+                    ProviderType::OpenAiImage => create_openai_image_client(
                         provider,
                         &supported_providers_list,
                         &available_bots,
                         &providers,
                         &store,
                     ),
-                    ProviderType::OpenAIRealtime => create_openai_realtime_client(provider),
+                    ProviderType::OpenAiRealtime => create_openai_realtime_client(provider),
                     ProviderType::DeepInquire => create_deep_inquire_client(
                         provider,
                         &supported_providers_list,
@@ -211,7 +211,7 @@ impl ChatScreen {
     }
 }
 
-type ProviderMap = HashMap<ProviderID, Provider>;
+type ProviderMap = HashMap<ProviderId, Provider>;
 type BotMap = HashMap<BotId, ProviderBot>;
 
 // Helper types and functions for client creation
@@ -232,17 +232,17 @@ fn is_localhost(url: &str) -> bool {
 
 fn has_valid_credentials(provider: &Provider) -> bool {
     match provider.provider_type {
-        ProviderType::OpenAI | ProviderType::MolyServer | ProviderType::OpenAIRealtime => {
+        ProviderType::OpenAi | ProviderType::MolyServer | ProviderType::OpenAiRealtime => {
             provider.api_key.is_some() || is_localhost(&provider.url)
         }
-        ProviderType::MoFa | ProviderType::OpenAIImage | ProviderType::DeepInquire => true,
+        ProviderType::MoFa | ProviderType::OpenAiImage | ProviderType::DeepInquire => true,
     }
 }
 
 fn apply_icon(bots: &mut Vec<Bot>, icon_opt: &Option<LiveDependency>) {
     if let Some(icon) = icon_opt {
         for bot in bots.iter_mut() {
-            bot.avatar = Picture::Dependency(icon.clone());
+            bot.avatar = EntityAvatar::Image(icon.as_str().to_string());
         }
     }
 }
@@ -323,7 +323,7 @@ fn create_openai_client(
     store: &Store,
     filter: ClientFilter,
 ) -> Option<Box<dyn BotClient>> {
-    let mut client = OpenAIClient::new(provider.url.clone());
+    let mut client = OpenAiClient::new(provider.url.clone());
 
     if let Some(key) = provider.api_key.as_ref() {
         if let Err(e) = client.set_key(key) {
@@ -356,7 +356,7 @@ fn create_openai_image_client(
     store: &Store,
 ) -> Option<Box<dyn BotClient>> {
     let client_url = provider.url.trim_start_matches('#').to_string();
-    let mut client = OpenAIImageClient::new(client_url);
+    let mut client = OpenAiImageClient::new(client_url);
 
     if let Some(key) = provider.api_key.as_ref() {
         if let Err(e) = client.set_key(key) {
@@ -382,7 +382,7 @@ fn create_openai_image_client(
 
 fn create_openai_realtime_client(provider: &Provider) -> Option<Box<dyn BotClient>> {
     let client_url = provider.url.trim_start_matches('#').to_string();
-    let mut client = OpenAIRealtimeClient::new(client_url);
+    let mut client = OpenAiRealtimeClient::new(client_url);
 
     if let Some(key) = provider.api_key.as_ref() {
         if let Err(e) = client.set_key(key) {

@@ -1,7 +1,8 @@
 use makepad_widgets::Cx;
-use moly_kit::{protocol::*, utils::asynchronous::spawn};
+use moly_kit::ai_kit::utils::asynchronous::spawn;
+use moly_kit::prelude::*;
 
-use crate::data::providers::ProviderID;
+use crate::data::providers::ProviderId;
 
 use super::providers::{Provider, ProviderBot, ProviderFetchModelsResult, ProviderType};
 
@@ -12,11 +13,11 @@ pub fn fetch_models_for_provider(provider: &Provider) {
     let api_key = provider.api_key.clone();
 
     match provider.provider_type {
-        ProviderType::OpenAI | ProviderType::MolyServer | ProviderType::MoFa => {
+        ProviderType::OpenAi | ProviderType::MolyServer | ProviderType::MoFa => {
             fetch_models_with_client(
                 provider_id.clone(),
                 move || {
-                    let mut client = moly_kit::clients::OpenAIClient::new(url);
+                    let mut client = OpenAiClient::new(url);
                     if let Some(key) = api_key {
                         let _ = client.set_key(&key);
                     }
@@ -32,12 +33,12 @@ pub fn fetch_models_for_provider(provider: &Provider) {
                 Some(should_include_model),
             );
         }
-        ProviderType::OpenAIImage => {
+        ProviderType::OpenAiImage => {
             fetch_models_with_client(
                 provider_id.clone(),
                 move || {
                     let client_url = url.trim_start_matches('#').to_string();
-                    let mut client = moly_kit::clients::OpenAIImageClient::new(client_url);
+                    let mut client = OpenAiImageClient::new(client_url);
                     if let Some(key) = api_key {
                         let _ = client.set_key(&key);
                     }
@@ -53,12 +54,12 @@ pub fn fetch_models_for_provider(provider: &Provider) {
                 None,
             );
         }
-        ProviderType::OpenAIRealtime => {
+        ProviderType::OpenAiRealtime => {
             fetch_models_with_client(
                 provider_id.clone(),
                 move || {
                     let client_url = url.trim_start_matches('#').to_string();
-                    let mut client = moly_kit::clients::OpenAIRealtimeClient::new(client_url);
+                    let mut client = OpenAiRealtimeClient::new(client_url);
                     if let Some(key) = api_key {
                         let _ = client.set_key(&key);
                     }
@@ -78,7 +79,7 @@ pub fn fetch_models_for_provider(provider: &Provider) {
             fetch_models_with_client(
                 provider_id.clone(),
                 move || {
-                    let mut client = moly_kit::clients::DeepInquireClient::new(url);
+                    let mut client = crate::data::deep_inquire_client::DeepInquireClient::new(url);
                     if let Some(key) = api_key {
                         let _ = client.set_key(&key);
                     }
@@ -99,7 +100,7 @@ pub fn fetch_models_for_provider(provider: &Provider) {
 
 /// Generic function to fetch models using any BotClient implementation
 fn fetch_models_with_client<F, M>(
-    provider_id: ProviderID,
+    provider_id: ProviderId,
     client_factory: F,
     map_bot: M,
     filter: Option<fn(&str) -> bool>,

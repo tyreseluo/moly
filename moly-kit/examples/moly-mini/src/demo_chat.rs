@@ -1,13 +1,9 @@
 use std::sync::{Arc, Mutex};
 
 use makepad_widgets::*;
-use moly_kit::controllers::chat::{
-    ChatController, ChatControllerPlugin, ChatStateMutation, ChatTask,
-};
-use moly_kit::mcp::mcp_manager::{McpManagerClient, McpTransport};
-use moly_kit::utils::asynchronous::spawn;
-use moly_kit::utils::vec::VecMutation;
-use moly_kit::*;
+
+use moly_kit::ai_kit::utils::asynchronous::spawn;
+use moly_kit::prelude::*;
 
 const OPEN_AI_KEY: Option<&str> = option_env!("OPEN_AI_KEY");
 const OPEN_AI_IMAGE_KEY: Option<&str> = option_env!("OPEN_AI_IMAGE_KEY");
@@ -139,8 +135,9 @@ impl DemoChat {
                     .chain(siliconflow_whitelist.iter())
                     .any(|s| *s == b.name.as_str());
 
-                let is_local_bot =
-                    b.id.provider() == "tester" || b.id.provider().contains("://localhost");
+                let is_local_bot = b.id.provider() == "tester"
+                    || b.name == "DeepInquire"
+                    || b.id.provider().contains("://localhost");
 
                 is_whitelisted_bot || is_local_bot
             })
@@ -233,18 +230,18 @@ impl DemoChat {
             let tester = TesterClient;
             client.add_client(Box::new(tester));
 
-            let ollama = OpenAIClient::new("http://localhost:11434/v1".into());
+            let ollama = OpenAiClient::new("http://localhost:11434/v1".into());
             client.add_client(Box::new(ollama));
 
             if let Some(key) = OPEN_AI_IMAGE_KEY {
-                let mut openai_image = OpenAIImageClient::new("https://api.openai.com/v1".into());
+                let mut openai_image = OpenAiImageClient::new("https://api.openai.com/v1".into());
                 let _ = openai_image.set_key(key);
                 client.add_client(Box::new(openai_image));
             }
 
             if let Some(key) = OPEN_AI_REALTIME_KEY {
                 let mut openai_realtime =
-                    OpenAIRealtimeClient::new("wss://api.openai.com/v1/realtime".into());
+                    OpenAiRealtimeClient::new("wss://api.openai.com/v1/realtime".into());
                 let _ = openai_realtime.set_key(key);
                 client.add_client(Box::new(openai_realtime));
             }
@@ -252,13 +249,13 @@ impl DemoChat {
             // Only add OpenAI client if API key is present
             if let Some(key) = OPEN_AI_KEY {
                 let openai_url = "https://api.openai.com/v1";
-                let mut openai = OpenAIClient::new(openai_url.into());
+                let mut openai = OpenAiClient::new(openai_url.into());
                 let _ = openai.set_key(key);
                 client.add_client(Box::new(openai));
 
                 // Realtime client
                 let openai_realtime_url = "wss://api.openai.com/v1/realtime";
-                let mut openai_realtime = OpenAIRealtimeClient::new(openai_realtime_url.into());
+                let mut openai_realtime = OpenAiRealtimeClient::new(openai_realtime_url.into());
                 let _ = openai_realtime.set_key(key);
                 client.add_client(Box::new(openai_realtime));
             }
@@ -266,7 +263,7 @@ impl DemoChat {
             // Only add OpenRouter client if API key is present
             if let Some(key) = OPEN_ROUTER_KEY {
                 let open_router_url = "https://openrouter.ai/api/v1";
-                let mut open_router = OpenAIClient::new(open_router_url.into());
+                let mut open_router = OpenAiClient::new(open_router_url.into());
                 let _ = open_router.set_key(key);
                 client.add_client(Box::new(open_router));
             }
@@ -274,7 +271,7 @@ impl DemoChat {
             // Only add SiliconFlow client if API key is present
             if let Some(key) = SILICON_FLOW_KEY {
                 let siliconflow_url = "https://api.siliconflow.cn/api/v1";
-                let mut siliconflow = OpenAIClient::new(siliconflow_url.into());
+                let mut siliconflow = OpenAiClient::new(siliconflow_url.into());
                 let _ = siliconflow.set_key(key);
                 client.add_client(Box::new(siliconflow));
             }
@@ -330,17 +327,13 @@ struct Plugin {
 }
 
 impl ChatControllerPlugin for Plugin {
-    fn on_state_ready(
-        &mut self,
-        state: &controllers::chat::ChatState,
-        _mutations: &[controllers::chat::ChatStateMutation],
-    ) {
+    fn on_state_ready(&mut self, state: &ChatState, _mutations: &[ChatStateMutation]) {
         self.init(state);
     }
 }
 
 impl Plugin {
-    fn init(&mut self, state: &controllers::chat::ChatState) {
+    fn init(&mut self, state: &ChatState) {
         if self.initialized {
             return;
         }

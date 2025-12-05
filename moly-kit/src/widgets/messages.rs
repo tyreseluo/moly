@@ -1,12 +1,10 @@
 use std::{
     cell::{Ref, RefMut},
-    collections::HashMap,
     sync::{Arc, Mutex},
 };
 
 use crate::{
-    controllers::chat::ChatController,
-    protocol::*,
+    ai_kit::{controllers::chat::ChatController, protocol::*},
     utils::makepad::{events::EventExt, portal_list::ItemsRangeIter, ui_runner::DeferRedraw},
     widgets::{
         avatar::AvatarWidgetRefExt, chat_line::ChatLineAction,
@@ -32,10 +30,6 @@ live_design! {
 
     pub Messages = {{Messages}} {
         flow: Overlay,
-
-        // TODO: Consider moving this out to it's own crate now that custom content
-        // is supported.
-        deep_inquire_content: <DeepInquireContent> {}
 
         list = <PortalList> {
             grab_key_focus: true
@@ -119,10 +113,19 @@ struct Editor {
     buffer: String,
 }
 
+pub trait CustomContent {
+    fn content_widget(
+        &mut self,
+        cx: &mut Cx,
+        previous_widget: WidgetRef,
+        content: &MessageContent,
+    ) -> Option<WidgetRef>;
+}
+
 /// View over a conversation with messages.
 ///
 /// This is mostly a dummy widget. Prefer using and adapting [crate::widgets::chat::Chat] instead.
-#[derive(Live, Widget)]
+#[derive(Live, Widget, LiveHook)]
 pub struct Messages {
     #[deref]
     deref: View,
@@ -130,17 +133,6 @@ pub struct Messages {
     #[rust]
     // Note: This should be `pub(crate)` but Makepad macros don't work with it.
     pub chat_controller: Option<Arc<Mutex<ChatController>>>,
-
-    /// Registry of DSL templates used by custom content widgets.
-    ///
-    /// This is exposed as it is for easy manipulation and it's passed to
-    /// [BotClient::content_widget] method allowing it to create widgets with
-    /// [WidgetRef::new_from_ptr].
-    #[rust]
-    pub templates: HashMap<LiveId, LivePtr>,
-
-    #[live]
-    deep_inquire_content: LivePtr,
 
     #[rust]
     current_editor: Option<Editor>,
@@ -160,6 +152,9 @@ pub struct Messages {
 
     #[rust]
     needs_extra_draw_pass: bool,
+
+    #[rust]
+    custom_contents: Vec<Box<dyn CustomContent>>,
 }
 
 impl Widget for Messages {
@@ -264,8 +259,6 @@ impl Messages {
                 ..Default::default()
             });
 
-        let mut bot_client = chat_controller.bot_client().map(|bc| bc.clone_box());
-
         let mut list = list_ref.borrow_mut().unwrap();
         list.set_item_range(cx, 0, chat_controller.state().messages.len());
 
@@ -296,7 +289,7 @@ impl Messages {
                     };
 
                     item.avatar(ids!(avatar)).borrow_mut().unwrap().avatar =
-                        Some(Picture::Grapheme("S".into()));
+                        Some(EntityAvatar::Text("S".into()));
                     item.label(ids!(name)).set_text(cx, "System");
 
                     if !message.metadata.is_writing() {
@@ -322,7 +315,7 @@ impl Messages {
                     };
 
                     item.avatar(ids!(avatar)).borrow_mut().unwrap().avatar =
-                        Some(Picture::Grapheme("T".into()));
+                        Some(EntityAvatar::Text("T".into()));
                     item.label(ids!(name)).set_text(cx, "Tool");
 
                     if !message.metadata.is_writing() {
@@ -387,7 +380,7 @@ impl Messages {
 
                         let item = list.item(cx, index, live_id!(ErrorLine));
                         item.avatar(ids!(avatar)).borrow_mut().unwrap().avatar =
-                            Some(Picture::Grapheme("X".into()));
+                            Some(EntityAvatar::Text("X".into()));
                         item.label(ids!(name)).set_text(cx, left);
 
                         let error_content = MessageContent {
@@ -405,7 +398,7 @@ impl Messages {
                         // Handle regular app messages
                         let item = list.item(cx, index, live_id!(AppLine));
                         item.avatar(ids!(avatar)).borrow_mut().unwrap().avatar =
-                            Some(Picture::Grapheme("A".into()));
+                            Some(EntityAvatar::Text("A".into()));
 
                         item.slot(ids!(content))
                             .current()
@@ -420,7 +413,7 @@ impl Messages {
                     let item = list.item(cx, index, live_id!(UserLine));
 
                     item.avatar(ids!(avatar)).borrow_mut().unwrap().avatar =
-                        Some(Picture::Grapheme("Y".into()));
+                        Some(EntityAvatar::Text("Y".into()));
                     item.label(ids!(name)).set_text(cx, "You");
 
                     item.slot(ids!(content))
@@ -441,7 +434,7 @@ impl Messages {
                             // Fallback: extract model name from BotId
                             let model_name = format!("{} (unavailable)", id.id());
                             let first_char = model_name.chars().next().unwrap_or('B');
-                            let avatar = Picture::Grapheme(first_char.to_uppercase().to_string());
+                            let avatar = EntityAvatar::Text(first_char.to_uppercase().to_string());
                             (model_name, avatar)
                         });
 
@@ -483,14 +476,11 @@ impl Messages {
                     item.label(ids!(name)).set_text(cx, name.as_str());
 
                     let mut slot = item.slot(ids!(content));
-                    if let Some(custom_content) = bot_client.as_mut().and_then(|bc| {
-                        bc.content_widget(
-                            cx,
-                            slot.current().clone(),
-                            &self.templates,
-                            &message.content,
-                        )
-                    }) {
+                    if let Some(custom_content) = self
+                        .custom_contents
+                        .iter_mut()
+                        .find_map(|cw| cw.content_widget(cx, slot.current(), &message.content))
+                    {
                         slot.replace(custom_content);
                     } else {
                         // Since portal list may reuse widgets, we must restore
@@ -738,6 +728,10 @@ impl Messages {
                 .set_text(cx, &self.current_editor.as_ref().unwrap().buffer);
         }
     }
+
+    pub fn register_custom_content<T: CustomContent + 'static>(&mut self, widget: T) {
+        self.custom_contents.push(Box::new(widget));
+    }
 }
 
 impl MessagesRef {
@@ -767,12 +761,5 @@ impl MessagesRef {
     /// Panics if the widget reference is empty or if it's already borrowed.
     pub fn write_with<R>(&mut self, f: impl FnOnce(&mut Messages) -> R) -> R {
         f(&mut *self.write())
-    }
-}
-
-impl LiveHook for Messages {
-    fn after_new_from_doc(&mut self, _cx: &mut Cx) {
-        self.templates
-            .insert(live_id!(DeepInquireContent), self.deep_inquire_content);
     }
 }

@@ -2,7 +2,7 @@ use crate::data::store::Store;
 
 use super::shared::ChatAgentAvatarWidgetExt;
 use makepad_widgets::*;
-use moly_kit::BotId;
+use moly_kit::prelude::*;
 
 live_design!(
     use link::theme::*;

@@ -1,5 +1,5 @@
 use makepad_widgets::{Action, Cx};
-use moly_kit::utils::asynchronous::spawn;
+use moly_kit::ai_kit::utils::asynchronous::spawn;
 use moly_protocol::data::*;
 
 use super::moly_client::MolyClient;
@@ -174,7 +174,7 @@ impl Search {
         matches!(self.state, SearchState::Errored)
     }
 
-    pub fn update_downloaded_file_in_search_results(&mut self, file_id: &FileID, downloaded: bool) {
+    pub fn update_downloaded_file_in_search_results(&mut self, file_id: &FileId, downloaded: bool) {
         let model = self
             .models
             .iter_mut()

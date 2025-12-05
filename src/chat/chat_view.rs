@@ -1,13 +1,10 @@
 use makepad_widgets::*;
-use moly_kit::controllers::chat::{
-    ChatController, ChatControllerPlugin, ChatControllerPluginRegistrationId, ChatState,
-    ChatStateMutation,
-};
-use moly_kit::utils::asynchronous::spawn;
-use moly_kit::utils::vec::{VecEffect, VecMutation};
-use moly_kit::*;
 
-use crate::data::chats::chat::ChatID;
+use moly_kit::ai_kit::utils::asynchronous::spawn;
+use moly_kit::prelude::*;
+
+use crate::data::chats::chat::ChatId;
+use crate::data::deep_inquire_client::DeepInquireCustomContent;
 use crate::data::store::{ProviderSyncingStatus, Store};
 use crate::shared::bot_context::BotContext;
 use crate::shared::utils::attachments::{
@@ -26,6 +23,7 @@ live_design! {
     use crate::chat::chat_panel::ChatPanel;
     use crate::chat::chat_history::ChatHistory;
     use crate::chat::chat_params::ChatParams;
+    use crate::chat::deep_inquire_content::DeepInquireContent;
     use moly_kit::widgets::chat::Chat;
     use moly_kit::widgets::prompt_input::PromptInput;
 
@@ -105,6 +103,8 @@ live_design! {
         flow: Down
         spacing: 0
 
+        deep_inquire_content: <DeepInquireContent> {}
+
         chat = <Chat> {
             messages = { padding: {left: 10, right: 10} }
             prompt = <PromptInputWithShadow> {}
@@ -121,8 +121,11 @@ pub struct ChatView {
     #[deref]
     view: View,
 
+    #[live]
+    deep_inquire_content: LivePtr,
+
     #[rust]
-    chat_id: ChatID,
+    chat_id: ChatId,
 
     #[rust]
     plugin_id: Option<ChatControllerPluginRegistrationId>,
@@ -156,6 +159,9 @@ pub struct ChatView {
 
 impl LiveHook for ChatView {
     fn after_new_from_doc(&mut self, cx: &mut Cx) {
+        self.messages(ids!(chat.messages))
+            .write()
+            .register_custom_content(DeepInquireCustomContent::new(self.deep_inquire_content));
         self.prompt_input(ids!(chat.prompt)).write().disable();
         let plugin_id = self
             .chat_controller
@@ -438,16 +444,16 @@ impl ChatView {
             self.prev_available_bots_len = current_bots_len;
 
             // Build lookup table for grouping
-            let mut bot_groups: HashMap<BotId, moly_kit::BotGroup> = HashMap::new();
+            let mut bot_groups: HashMap<BotId, BotGroup> = HashMap::new();
 
             for (bot_id, provider_bot) in &store.chats.available_bots {
                 if let Some(provider) = store.chats.providers.get(&provider_bot.provider_id) {
                     let icon = store
                         .get_provider_icon(&provider.name)
-                        .map(|dep| moly_kit::protocol::Picture::Dependency(dep));
+                        .map(|dep| EntityAvatar::Image(dep.as_str().to_string()));
                     bot_groups.insert(
                         bot_id.clone(),
-                        moly_kit::BotGroup {
+                        BotGroup {
                             id: provider.id.clone(),
                             label: provider.name.clone(),
                             icon,
@@ -498,7 +504,7 @@ impl ChatView {
 }
 
 impl ChatViewRef {
-    pub fn set_chat_id(&mut self, chat_id: ChatID) {
+    pub fn set_chat_id(&mut self, chat_id: ChatId) {
         if let Some(mut inner) = self.borrow_mut() {
             inner.chat_id = chat_id;
             // Reset sync flag so bot_id will be synced from Store on next draw

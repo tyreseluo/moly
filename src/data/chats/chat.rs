@@ -3,12 +3,13 @@ use crate::shared::utils::{
     filesystem,
 };
 use anyhow::{Result, anyhow};
-use moly_kit::{BotId, Message, utils::asynchronous::spawn};
-use moly_protocol::data::FileID;
+use moly_kit::ai_kit::utils::asynchronous::spawn;
+use moly_kit::prelude::*;
+use moly_protocol::data::FileId;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-pub type ChatID = u128;
+pub type ChatId = u128;
 
 #[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 enum TitleState {
@@ -19,7 +20,7 @@ enum TitleState {
 
 #[derive(Serialize, Deserialize)]
 struct ChatData {
-    id: ChatID,
+    id: ChatId,
     associated_bot: Option<BotId>,
     system_prompt: Option<String>,
     messages: Vec<Message>,
@@ -30,7 +31,7 @@ struct ChatData {
     accessed_at: chrono::DateTime<chrono::Utc>,
 
     // Legacy field, it can be removed in the future.
-    last_used_file_id: Option<FileID>,
+    last_used_file_id: Option<FileId>,
 }
 
 #[derive(Debug, Clone)]
@@ -61,7 +62,7 @@ impl Default for ChatInferenceParams {
 #[derive(Debug, Clone)]
 pub struct Chat {
     /// Unix timestamp in ms.
-    pub id: ChatID,
+    pub id: ChatId,
 
     /// This is the model or agent that is currently "active" on the chat
     /// For models it is the most recent model used or loaded in the context of this chat session.

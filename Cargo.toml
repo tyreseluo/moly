@@ -1,7 +1,8 @@
 [workspace]
 resolver = "2"
 
-members = [
+members = ["ai-kit",
+    "ai-kit/examples/*",
     "moly-kit",
     "moly-kit/examples/*",
     "moly-sync",
@@ -21,7 +22,7 @@ path = "src/main.rs"
 
 
 [dependencies]
-moly-protocol = { git = "https://github.com/moly-ai/moly-local", package = "moly-protocol" }
+moly-protocol = { git = "https://github.com/moly-ai/moly-local", package = "moly-protocol", rev = "788cac14d"}
 moly-kit = { path = "./moly-kit", features = ["full"] }
 moly-sync = { path = "./moly-sync"}
 makepad-widgets = { git = "https://github.com/wyeworks/makepad", rev = "b8b65f4fa" }
@@ -43,6 +44,7 @@ log = "0.4"
 env_logger = "0.11"
 cfg-if = "1.0.0"
 uuid = { version = "1.18.0", features = ["js", "v7"] }
+async-stream = "0.3.6"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "signal"] }
