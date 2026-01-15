@@ -64,7 +64,7 @@ live_design! {
         search_container = <RoundedView> {
             width: Fill, height: Fit,
             show_bg: true,
-            padding: {top: 8, bottom: 8, left: 12, right: 12},
+            padding: {top: 4, bottom: 4, left: 8, right: 8},
             spacing: 8,
             align: {x: 0.0, y: 0.5},
             draw_bg: {
@@ -99,7 +99,7 @@ live_design! {
 
         list_container = <ScrollYView> {
             width: Fill,
-            height: 500,
+            height: 200,
             scroll_bars: {
                 scroll_bar_y: {
                     drag_scrolling: true,
@@ -284,8 +284,12 @@ impl ModelSelector {
         // Get button position and size for positioning the modal
         let button_rect = self.button(ids!(button)).area().rect(cx);
 
-        let modal_content_height = 608.0; // list height (500) + search (40) + padding (68)
-        let gap = 25.0;
+        const LIST_HEIGHT: f64 = 200.0;
+        const SEARCH_HEIGHT: f64 = 40.0;
+        const PADDING_HEIGHT: f64 = 68.0;
+
+        const MODAL_CONTENT_HEIGHT: f64 = LIST_HEIGHT + SEARCH_HEIGHT + PADDING_HEIGHT;
+        const GAP: f64 = 25.0;
 
         let modal_x;
         let modal_y;
@@ -293,12 +297,12 @@ impl ModelSelector {
 
         // On desktop, align left edge with button, position above with gap
         if cx.display_context.is_desktop() {
-            modal_x = button_rect.pos.x - gap;
-            modal_y = button_rect.pos.y - modal_content_height - gap - 5.0 // gap;
+            modal_x = button_rect.pos.x - GAP;
+            modal_y = button_rect.pos.y - MODAL_CONTENT_HEIGHT - GAP - 5.0 // gap;
         } else {
             // On mobile, position the modal in the horizontal center, vertical bottom of the screen
             modal_x = 0.0;
-            modal_y = cx.display_context.screen_size.y - modal_content_height - 5.0;
+            modal_y = cx.display_context.screen_size.y - MODAL_CONTENT_HEIGHT - 5.0;
             bg_view_visible = true;
         }
 

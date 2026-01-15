@@ -9,7 +9,7 @@ live_design! {
     pub ModelSelectorItem = {{ModelSelectorItem}} {
         width: Fill,
         height: Fit,
-        padding: {left: 24, right: 16, top: 12, bottom: 12}
+        padding: {left: 24, right: 16, top: 8, bottom: 8}
         spacing: 10
         align: {x: 0.0, y: 0.5}
 

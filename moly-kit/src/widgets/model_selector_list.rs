@@ -19,6 +19,8 @@ live_design! {
 
     use crate::widgets::model_selector_item::ModelSelectorItem;
 
+    ICON_SIZE = 25.0
+
     pub ModelSelectorList = {{ModelSelectorList}} {
         width: Fill, height: Fit
         flow: Down,
@@ -27,20 +29,20 @@ live_design! {
 
         section_label_template: <View> {
             width: Fill, height: Fit
-            padding: {left: 16, top: 12, bottom: 6}
+            padding: {left: 14, top: 6, bottom: 4}
             align: {x: 0.0, y: 0.5}
-            spacing: 8
+            spacing: 4
 
             icon_view = <View> {
                 width: Fit, height: Fit
                 visible: false
                 icon_image = <Image> {
-                    width: 25, height: 25
+                    width: (ICON_SIZE), height: (ICON_SIZE)
                 }
             }
 
             icon_fallback_view = <RoundedView> {
-                width: 25, height: 25
+                width: (ICON_SIZE), height: (ICON_SIZE)
                 visible: false
                 show_bg: true
                 draw_bg: {
@@ -51,7 +53,7 @@ live_design! {
 
                 icon_fallback_label = <Label> {
                     draw_text: {
-                        text_style: <THEME_FONT_BOLD>{font_size: 12.0},
+                        text_style: <THEME_FONT_BOLD>{font_size: 13.0},
                         color: #fff
                     }
                 }
