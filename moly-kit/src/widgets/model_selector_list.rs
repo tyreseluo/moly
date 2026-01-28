@@ -1,11 +1,14 @@
 use super::model_selector_item::{ModelSelectorItemAction, ModelSelectorItemWidgetRefExt};
 use crate::{
     aitk::{controllers::chat::ChatController, protocol::*},
-    widgets::model_selector::{BotGroup, GroupingFn},
+    widgets::model_selector::{BotGroup, default_grouping},
 };
 use makepad_widgets::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+
+// We need a type alias, so Makepad's `#[rust(...)]` macro attribute works.
+type ErasedGroupingClosure = Box<dyn Fn(&Bot) -> BotGroup>;
 
 /// Trait for filtering which bots to show in the model selector
 pub trait BotFilter {
@@ -99,14 +102,11 @@ pub struct ModelSelectorList {
     #[rust]
     pub chat_controller: Option<Arc<Mutex<ChatController>>>,
 
-    #[rust]
-    pub grouping: Option<GroupingFn>,
+    #[rust(Box::new(default_grouping) as ErasedGroupingClosure)]
+    pub grouping: ErasedGroupingClosure,
 
     #[rust]
     pub filter: Option<Box<dyn BotFilter>>,
-
-    #[rust]
-    pub selected_bot_id: Option<BotId>,
 }
 
 impl Widget for ModelSelectorList {
@@ -122,14 +122,18 @@ impl Widget for ModelSelectorList {
     fn draw_walk(&mut self, cx: &mut Cx2d, _scope: &mut Scope, walk: Walk) -> DrawStep {
         cx.begin_turtle(walk, self.layout);
 
-        // Get bots from chat controller
-        let bots = if let Some(chat_controller) = &self.chat_controller {
-            chat_controller.lock().unwrap().state().bots.clone()
+        // Get bots and selected_bot_id from chat controller
+        let (bots, selected_bot_id) = if let Some(chat_controller) = &self.chat_controller {
+            {
+                let chat_controller = chat_controller.lock().unwrap();
+                let state = chat_controller.state();
+                (state.bots.clone(), state.bot_id.clone())
+            }
         } else {
-            Vec::new()
+            (Vec::new(), None)
         };
 
-        self.draw_items(cx, &bots);
+        self.draw_items(cx, &bots, selected_bot_id.as_ref());
 
         cx.end_turtle_with_area(&mut self.area);
         DrawStep::done()
@@ -157,20 +161,8 @@ impl WidgetMatchEvent for ModelSelectorList {
 }
 
 impl ModelSelectorList {
-    fn draw_items(&mut self, cx: &mut Cx2d, bots: &[Bot]) {
+    fn draw_items(&mut self, cx: &mut Cx2d, bots: &[Bot], selected_bot_id: Option<&BotId>) {
         let mut total_height = 0.0;
-
-        // Default grouping function: group by provider from bot ID
-        let default_grouping: GroupingFn = Arc::new(|bot: &Bot| {
-            let provider = bot.id.provider();
-            BotGroup {
-                id: provider.to_string(),
-                label: provider.to_string(),
-                icon: Some(bot.avatar.clone()),
-            }
-        });
-
-        let grouping_fn = self.grouping.as_ref().unwrap_or(&default_grouping);
 
         // Filter bots based on search
         let terms = self
@@ -202,7 +194,7 @@ impl ModelSelectorList {
         let mut groups: HashMap<String, ((String, Option<EntityAvatar>), Vec<&Bot>)> =
             HashMap::new();
         for bot in filtered_bots {
-            let group = grouping_fn(bot);
+            let group = (self.grouping)(bot);
             groups
                 .entry(group.id)
                 .or_insert_with(|| ((group.label, group.icon), Vec::new()))
@@ -269,7 +261,9 @@ impl ModelSelectorList {
 
                 let mut item = item_widget.as_model_selector_item();
                 item.set_bot(bot.clone());
-                item.set_selected_bot_id(self.selected_bot_id.clone());
+
+                let is_selected = selected_bot_id == Some(&bot.id);
+                item.set_selected(is_selected);
 
                 let _ = item_widget.draw_all(cx, &mut Scope::empty());
                 total_height += item_widget.area().rect(cx).size.y;
@@ -308,15 +302,12 @@ impl ModelSelectorListRef {
         }
     }
 
-    pub fn set_grouping(&mut self, grouping: Option<GroupingFn>) {
+    pub fn set_grouping<F>(&mut self, grouping: F)
+    where
+        F: Fn(&Bot) -> BotGroup + 'static,
+    {
         if let Some(mut inner) = self.borrow_mut() {
-            inner.grouping = grouping;
-        }
-    }
-
-    pub fn set_selected_bot_id(&mut self, selected_bot_id: Option<BotId>) {
-        if let Some(mut inner) = self.borrow_mut() {
-            inner.selected_bot_id = selected_bot_id;
+            inner.grouping = Box::new(grouping);
         }
     }
 }

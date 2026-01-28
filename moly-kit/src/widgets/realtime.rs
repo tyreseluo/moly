@@ -206,8 +206,8 @@ live_design! {
 
         transcription_model_selector = <SimpleDropDown> {
             margin: 5
-            labels: ["whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"]
-            values: [whisper_1, gpt_4o_transcribe, gpt_4o_mini_transcribe]
+            labels: ["whisper-1", "whisper", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"]
+            values: [whisper_1, whisper, gpt_4o_transcribe, gpt_4o_mini_transcribe]
 
             draw_text: {
                 color: #222
@@ -875,23 +875,8 @@ impl Realtime {
         self.is_connected = true;
     }
 
-    pub fn set_bot_entity_id(&mut self, cx: &mut Cx, bot_entity_id: EntityId) {
+    pub fn set_bot_entity_id(&mut self, _cx: &mut Cx, bot_entity_id: EntityId) {
         self.bot_entity_id = Some(bot_entity_id);
-
-        // TODO: set the available transcription models through the realtime channel.
-        // (determine the list of models in openai_realtime client)
-        // If the provider is not OpenAI, replace `whisper-1` with `whisper`
-        if let Some(EntityId::Bot(bot_id)) = &self.bot_entity_id {
-            if !bot_id.provider().contains("api.openai.com") {
-                let labels = vec![
-                    "whisper".to_string(),
-                    "gpt-4o-transcribe".to_string(),
-                    "gpt-4o-mini-transcribe".to_string(),
-                ];
-                self.drop_down(ids!(transcription_model_selector))
-                    .set_labels(cx, labels);
-            }
-        }
     }
 
     pub fn set_chat_controller(&mut self, chat_controller: Option<Arc<Mutex<ChatController>>>) {

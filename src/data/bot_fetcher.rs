@@ -109,13 +109,21 @@ fn fetch_models_with_client<F, M>(
     M: Fn(Bot) -> ProviderBot + Send + 'static,
 {
     spawn(async move {
-        let client = client_factory();
+        let mut client = client_factory();
 
         match client.bots().await.into_result() {
             Ok(bots) => {
                 let models: Vec<ProviderBot> = bots
                     .into_iter()
                     .filter(|bot| filter.map_or(true, |f| f(&bot.name)))
+                    .map(|bot| Bot {
+                        // The client Moly interacts with in the `Store` is a `RouterClient`.
+                        // This module is creating specific clients to obtain the bots that will
+                        // end up becoming `ProviderBot`s as expected by Moly.
+                        // So for now, let's ensure here that ids match.
+                        id: RouterClient::prefix(&provider_id, &bot.id),
+                        ..bot
+                    })
                     .map(map_bot)
                     .collect();
 

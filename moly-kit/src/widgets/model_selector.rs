@@ -211,14 +211,20 @@ impl Widget for ModelSelector {
                 .set_text(cx, "Choose an AI assistant");
         }
 
-        // Set the chat controller and selected bot ID on the list before drawing
-        if let Some(controller) = &self.chat_controller {
-            if let Some(mut list) = self
+        // Set the chat controller on the list before drawing
+        if let Some(controller) = &self.chat_controller
+            && let Some(mut list) = self
                 .widget(ids!(options.list_container.list))
                 .borrow_mut::<ModelSelectorList>()
+            && Arc::as_ptr(controller)
+                != list
+                    .chat_controller
+                    .as_ref()
+                    .map(Arc::as_ptr)
+                    .unwrap_or(std::ptr::null())
+        {
             {
                 list.chat_controller = Some(controller.clone());
-                list.selected_bot_id = selected_bot_id;
             }
         }
 
@@ -380,15 +386,27 @@ impl ModelSelectorRef {
     /// - `group_id`: Unique identifier for the group (used for deduplication and sorting)
     /// - `group_label`: Display name for the group header
     /// - `group_icon`: Optional icon to display next to the group label
-    pub fn set_grouping(&mut self, grouping: Option<GroupingFn>) {
+    pub fn set_grouping<F>(&mut self, grouping: F)
+    where
+        F: Fn(&Bot) -> BotGroup + 'static,
+    {
         if let Some(inner) = self.borrow_mut() {
             if let Some(mut list) = inner
                 .widget(ids!(options.list_container.list))
                 .borrow_mut::<ModelSelectorList>()
             {
-                list.grouping = grouping;
+                list.grouping = Box::new(grouping);
             }
         }
+    }
+}
+
+/// Default grouping: groups all bots under "All" category.
+pub fn default_grouping(bot: &Bot) -> BotGroup {
+    BotGroup {
+        id: "all".to_string(),
+        label: "All".to_string(),
+        icon: Some(bot.avatar.clone()),
     }
 }
 
@@ -406,73 +424,4 @@ pub struct BotGroup {
     pub label: String,
     /// Optional icon displayed next to the group label
     pub icon: Option<EntityAvatar>,
-}
-
-/// Callback function that determines how bots are grouped in the model selector.
-///
-/// Applications can provide a custom grouping function to organize models by provider,
-/// capabilities, or any other criteria. The function receives a bot and returns a
-/// [`BotGroup`] that specifies how that bot should be grouped.
-///
-/// # Default Behavior
-/// If no grouping function is provided, bots are grouped by their provider
-/// (extracted from `BotId.provider()`), using the bot's avatar as the group icon.
-///
-/// # Example
-/// ```ignore
-/// use moly_kit::widgets::model_selector::{GroupingFn, BotGroup};
-/// use std::sync::Arc;
-///
-/// // Group by provider with custom names and icons
-/// let grouping: GroupingFn = Arc::new(|bot| {
-///     let provider_id = get_provider_id(&bot.id);
-///     let provider_name = get_friendly_name(&provider_id);
-///     let icon = get_provider_icon(&provider_id);
-///     BotGroup {
-///         id: provider_id,
-///         label: provider_name,
-///         icon,
-///     }
-/// });
-///
-/// model_selector.set_grouping(Some(grouping));
-/// ```
-pub type GroupingFn = Arc<dyn Fn(&Bot) -> BotGroup + Send + Sync>;
-
-/// Creates a grouping function that queries data on-demand via a lookup closure.
-///
-/// This is more efficient than capturing data in the grouping closure, as it avoids
-/// data duplication and always returns fresh results from the source.
-///
-/// # Arguments
-/// * `lookup` - A closure that takes a BotId and returns grouping information, or None for default
-///
-/// # Example
-/// ```ignore
-/// use moly_kit::widgets::model_selector::{create_lookup_grouping, BotGroup};
-///
-/// let grouping = create_lookup_grouping(|bot_id| {
-///     let provider = get_provider_for_bot(bot_id)?;
-///     Some(BotGroup {
-///         id: provider.id,
-///         label: provider.name,
-///         icon: provider.icon,
-///     })
-/// });
-/// ```
-pub fn create_lookup_grouping<F>(lookup: F) -> GroupingFn
-where
-    F: Fn(&BotId) -> Option<BotGroup> + Send + Sync + 'static,
-{
-    Arc::new(move |bot: &Bot| {
-        lookup(&bot.id).unwrap_or_else(|| {
-            // Default fallback: group by provider from bot ID
-            let provider = bot.id.provider();
-            BotGroup {
-                id: provider.to_string(),
-                label: provider.to_string(),
-                icon: Some(bot.avatar.clone()),
-            }
-        })
-    })
 }
