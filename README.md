@@ -2,6 +2,8 @@
 
 # Moly: a Rust AI LLM client built atop [Robius](https://github.com/project-robius)
 
+![Powered by Makepad badge](https://github.com/user-attachments/assets/2d21b3cf-25fa-4d5c-9582-6d083530d8c0)
+
 Moly is an AI LLM client written in Rust, that demonstrates the power of the [Makepad UI toolkit](https://github.com/makepad/makepad) and [Project Robius](https://github.com/project-robius), a framework for multi-platform application development in Rust.
 
 > ⚠️ Moly is in early development. Please [file an issue](https://github.com/moly-ai/moly-ai/issues/new) if you encounter bugs or unexpected results.
