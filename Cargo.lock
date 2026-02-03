@@ -2908,7 +2908,7 @@ dependencies = [
 
 [[package]]
 name = "moly"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -2943,7 +2943,7 @@ dependencies = [
 
 [[package]]
 name = "moly-kit"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "aitk",
  "cfg-if",
@@ -2961,7 +2961,7 @@ dependencies = [
 
 [[package]]
 name = "moly-mini"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "env_logger",
  "futures",
