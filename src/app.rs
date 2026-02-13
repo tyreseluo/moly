@@ -12,6 +12,8 @@ use crate::shared::download_notification_popup::{
 };
 use crate::shared::moly_server_popup::MolyServerPopupAction;
 use crate::shared::popup_notification::PopupNotificationWidgetRefExt;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::updater::UpdaterAction;
 use moly_protocol::data::{File, FileId};
 
 use makepad_widgets::*;
@@ -225,6 +227,9 @@ pub struct App {
 
     #[rust]
     file_id: Option<FileId>,
+
+    #[rust]
+    did_check_moly_update: bool,
 }
 
 impl LiveRegister for App {
@@ -273,6 +278,16 @@ impl AppMain for App {
             self.ui.handle_event(cx, event, &mut Scope::empty());
             return;
         };
+
+        #[cfg(not(target_arch = "wasm32"))]
+        if !self.did_check_moly_update {
+            self.did_check_moly_update = true;
+            moly_kit::aitk::utils::asynchronous::spawn(async {
+                if let Err(err) = crate::updater::check_moly_update().await {
+                    ::log::warn!("Updater placeholder: check request failed: {}", err);
+                }
+            });
+        }
 
         self.ui.view(ids!(loading_view)).set_visible(cx, false);
 
@@ -348,6 +363,23 @@ impl MatchEvent for App {
         for action in actions.iter() {
             if let MarkdownAction::LinkNavigated(url) = action.as_widget_action().cast() {
                 let _ = robius_open::Uri::new(&url).open();
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            match action.cast() {
+                UpdaterAction::Checking => {
+                    ::log::info!("Updater placeholder: checking");
+                }
+                UpdaterAction::NoUpdate => {
+                    ::log::info!("Updater placeholder: no update");
+                }
+                UpdaterAction::UpdateAvailable(_) => {
+                    ::log::info!("Updater placeholder: update available");
+                }
+                UpdaterAction::Failed(err) => {
+                    ::log::warn!("Updater placeholder: failed: {}", err);
+                }
+                UpdaterAction::None => {}
             }
 
             self.store.as_mut().unwrap().handle_action(action);
