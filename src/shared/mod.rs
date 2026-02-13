@@ -12,6 +12,7 @@ pub mod popup_notification;
 pub mod resource_imports;
 pub mod styles;
 pub mod tooltip;
+pub mod updater_notification_popup;
 pub mod utils;
 pub mod widgets;
 
@@ -27,4 +28,5 @@ pub fn live_design(cx: &mut Cx) {
     tooltip::live_design(cx);
     desktop_buttons::live_design(cx);
     moly_server_popup::live_design(cx);
+    updater_notification_popup::live_design(cx);
 }

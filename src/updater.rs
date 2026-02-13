@@ -3,7 +3,8 @@ use cargo_packager_updater::{Config, Update, check_update, semver::Version};
 use makepad_widgets::*;
 use url::Url;
 
-const MOLY_UPDATER_PUBKEY: &str = "<MOLY_PUBKEY>";
+// const MOLY_UPDATER_PUBKEY: &str = "<MOLY_PUBKEY>";
+const MOLY_UPDATER_PUBKEY: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI4QjY3NkZFMDFGQkYzODgKUldTSTgvc0IvbmEydU50OVc1UDcvaWVMTDlZb3hKS1B0bFV5Zjc2QTdoYVo5OHJKWVVpRUxZbGUK";
 
 #[derive(Clone, Debug, DefaultNone)]
 pub enum UpdaterAction {

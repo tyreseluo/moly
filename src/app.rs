@@ -12,6 +12,9 @@ use crate::shared::download_notification_popup::{
 };
 use crate::shared::moly_server_popup::MolyServerPopupAction;
 use crate::shared::popup_notification::PopupNotificationWidgetRefExt;
+use crate::shared::updater_notification_popup::{
+    UpdaterNotificationPopupAction, UpdaterNotificationPopupWidgetRefExt,
+};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::updater::UpdaterAction;
 use moly_protocol::data::{File, FileId};
@@ -30,6 +33,7 @@ live_design! {
     use crate::shared::widgets::SidebarMenuButton;
     use crate::shared::download_notification_popup::DownloadNotificationPopup;
     use crate::shared::moly_server_popup::MolyServerPopup;
+    use crate::shared::updater_notification_popup::UpdaterNotificationPopup;
     use crate::shared::desktop_buttons::MolyDesktopButton;
 
     use crate::landing::model_card::ModelCardViewAllModal;
@@ -204,6 +208,12 @@ live_design! {
                         popup_moly_server = <MolyServerPopup> {}
                     }
                 }
+
+                updater_popup = <PopupNotification> {
+                    content: {
+                        popup_updater_notification = <UpdaterNotificationPopup> {}
+                    }
+                }
             }
         }
     }
@@ -369,15 +379,35 @@ impl MatchEvent for App {
             match action.cast() {
                 UpdaterAction::Checking => {
                     ::log::info!("Updater placeholder: checking");
+                    let mut popup = self
+                        .ui
+                        .updater_notification_popup(ids!(popup_updater_notification));
+                    popup.show_checking(cx);
+                    self.ui.popup_notification(ids!(updater_popup)).open(cx);
                 }
                 UpdaterAction::NoUpdate => {
                     ::log::info!("Updater placeholder: no update");
+                    let mut popup = self
+                        .ui
+                        .updater_notification_popup(ids!(popup_updater_notification));
+                    popup.show_no_update(cx);
+                    self.ui.popup_notification(ids!(updater_popup)).open(cx);
                 }
-                UpdaterAction::UpdateAvailable(_) => {
-                    ::log::info!("Updater placeholder: update available");
+                UpdaterAction::UpdateAvailable(update) => {
+                    ::log::info!("Updater placeholder: update available {}", update.version);
+                    let mut popup = self
+                        .ui
+                        .updater_notification_popup(ids!(popup_updater_notification));
+                    popup.show_update_available(cx, &update.current_version, &update.version);
+                    self.ui.popup_notification(ids!(updater_popup)).open(cx);
                 }
                 UpdaterAction::Failed(err) => {
                     ::log::warn!("Updater placeholder: failed: {}", err);
+                    let mut popup = self
+                        .ui
+                        .updater_notification_popup(ids!(popup_updater_notification));
+                    popup.show_failed(cx, &err);
+                    self.ui.popup_notification(ids!(updater_popup)).open(cx);
                 }
                 UpdaterAction::None => {}
             }
@@ -466,6 +496,15 @@ impl MatchEvent for App {
                 self.ui
                     .popup_notification(ids!(moly_server_popup))
                     .close(cx);
+            }
+
+            if let UpdaterNotificationPopupAction::InstallAndRestartClicked = action.cast() {
+                ::log::info!("Updater placeholder: install and restart clicked");
+                self.ui.popup_notification(ids!(updater_popup)).close(cx);
+            }
+
+            if let UpdaterNotificationPopupAction::CloseButtonClicked = action.cast() {
+                self.ui.popup_notification(ids!(updater_popup)).close(cx);
             }
         }
 
