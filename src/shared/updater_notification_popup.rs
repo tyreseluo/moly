@@ -13,6 +13,7 @@ live_design! {
     FAILURE_ICON = dep("crate://self/resources/images/failure_icon.png")
 
     PRIMARY_LINK_FONT_COLOR = #x0E7090
+    SECONDARY_LINK_FONT_COLOR = #667085
 
     PopupActionLink = <LinkLabel> {
         width: Fit,
@@ -27,6 +28,25 @@ live_design! {
                         self.hover
                     ),
                     PRIMARY_LINK_FONT_COLOR,
+                    self.down
+                )
+            }
+        }
+    }
+
+    PopupSecondaryActionLink = <LinkLabel> {
+        width: Fit,
+        margin: 2,
+        draw_text: {
+            text_style: <BOLD_FONT>{font_size: 9},
+            fn get_color(self) -> vec4 {
+                return mix(
+                    mix(
+                        SECONDARY_LINK_FONT_COLOR,
+                        SECONDARY_LINK_FONT_COLOR,
+                        self.hover
+                    ),
+                    SECONDARY_LINK_FONT_COLOR,
                     self.down
                 )
             }
@@ -142,6 +162,11 @@ live_design! {
                 visible: false,
                 text: "Install and Restart"
             }
+
+            cancel_link = <PopupSecondaryActionLink> {
+                visible: false,
+                text: "Cancel"
+            }
         }
     }
 
@@ -162,6 +187,7 @@ pub enum UpdaterNotificationPopupAction {
     None,
     CloseButtonClicked,
     InstallAndRestartClicked,
+    CancelClicked,
 }
 
 #[derive(Live, LiveHook, Widget)]
@@ -197,6 +223,10 @@ impl WidgetMatchEvent for UpdaterNotificationPopup {
         if self.link_label(ids!(install_link)).clicked(actions) {
             cx.action(UpdaterNotificationPopupAction::InstallAndRestartClicked);
         }
+
+        if self.link_label(ids!(cancel_link)).clicked(actions) {
+            cx.action(UpdaterNotificationPopupAction::CancelClicked);
+        }
     }
 }
 
@@ -206,14 +236,10 @@ impl UpdaterNotificationPopup {
         self.view(ids!(failure_icon)).set_visible(cx, false);
     }
 
-    fn show_failure_icon(&mut self, cx: &mut Cx) {
-        self.view(ids!(success_icon)).set_visible(cx, false);
-        self.view(ids!(failure_icon)).set_visible(cx, true);
-    }
-
-    fn set_install_action_visible(&mut self, cx: &mut Cx, visible: bool) {
+    fn set_update_actions_visible(&mut self, cx: &mut Cx, visible: bool) {
         self.view(ids!(actions)).set_visible(cx, visible);
         self.link_label(ids!(install_link)).set_visible(cx, visible);
+        self.link_label(ids!(cancel_link)).set_visible(cx, visible);
     }
 
     fn set_content(&mut self, cx: &mut Cx, title: &str, summary: &str) {
@@ -223,22 +249,6 @@ impl UpdaterNotificationPopup {
 }
 
 impl UpdaterNotificationPopupRef {
-    pub fn show_checking(&mut self, cx: &mut Cx) {
-        if let Some(mut inner) = self.borrow_mut() {
-            inner.show_success_icon(cx);
-            inner.set_install_action_visible(cx, false);
-            inner.set_content(cx, "Checking for updates", "Please wait...");
-        }
-    }
-
-    pub fn show_no_update(&mut self, cx: &mut Cx) {
-        if let Some(mut inner) = self.borrow_mut() {
-            inner.show_success_icon(cx);
-            inner.set_install_action_visible(cx, false);
-            inner.set_content(cx, "You're up to date", "No new version is available.");
-        }
-    }
-
     pub fn show_update_available(
         &mut self,
         cx: &mut Cx,
@@ -247,19 +257,11 @@ impl UpdaterNotificationPopupRef {
     ) {
         if let Some(mut inner) = self.borrow_mut() {
             inner.show_success_icon(cx);
-            inner.set_install_action_visible(cx, true);
+            inner.set_update_actions_visible(cx, true);
             let summary = format!(
                 "Current version: {current_version}\nLatest version: {latest_version}"
             );
             inner.set_content(cx, "Update available", &summary);
-        }
-    }
-
-    pub fn show_failed(&mut self, cx: &mut Cx, err: &str) {
-        if let Some(mut inner) = self.borrow_mut() {
-            inner.show_failure_icon(cx);
-            inner.set_install_action_visible(cx, false);
-            inner.set_content(cx, "Failed to check updates", err);
         }
     }
 }

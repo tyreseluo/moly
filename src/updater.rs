@@ -17,14 +17,17 @@ pub enum UpdaterAction {
 
 /// Checks GitHub Releases for an available update without blocking the UI thread.
 ///
-/// This queries the `latest` release endpoint using target/arch-specific
-/// manifests uploaded by the release workflow (e.g. `latest-windows-x86_64.json`).
+/// This queries the `latest` release endpoint using a single manifest
+/// uploaded by the release workflow (`latest.json`).
 /// When finished, it posts a [`UpdaterAction`] into the Makepad event queue so the UI
 /// can react without the startup path blocking on network I/O.
 pub async fn check_moly_update() -> Result<()> {
     let current_version = env!("CARGO_PKG_VERSION").parse::<Version>()?;
     let config = Config {
-        endpoints: vec![Url::parse("https://github.com/tyreseluo/moly/releases/latest/download/latest-{{target}}-{{arch}}.json").expect("Failed to parse URL")],
+        endpoints: vec![
+            Url::parse("https://github.com/tyreseluo/moly/releases/latest/download/latest.json")
+                .expect("Failed to parse URL"),
+        ],
         pubkey: MOLY_UPDATER_PUBKEY.into(),
         ..Default::default()
     };

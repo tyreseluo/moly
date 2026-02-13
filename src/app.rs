@@ -379,19 +379,9 @@ impl MatchEvent for App {
             match action.cast() {
                 UpdaterAction::Checking => {
                     ::log::info!("Updater placeholder: checking");
-                    let mut popup = self
-                        .ui
-                        .updater_notification_popup(ids!(popup_updater_notification));
-                    popup.show_checking(cx);
-                    self.ui.popup_notification(ids!(updater_popup)).open(cx);
                 }
                 UpdaterAction::NoUpdate => {
                     ::log::info!("Updater placeholder: no update");
-                    let mut popup = self
-                        .ui
-                        .updater_notification_popup(ids!(popup_updater_notification));
-                    popup.show_no_update(cx);
-                    self.ui.popup_notification(ids!(updater_popup)).open(cx);
                 }
                 UpdaterAction::UpdateAvailable(update) => {
                     ::log::info!("Updater placeholder: update available {}", update.version);
@@ -403,11 +393,6 @@ impl MatchEvent for App {
                 }
                 UpdaterAction::Failed(err) => {
                     ::log::warn!("Updater placeholder: failed: {}", err);
-                    let mut popup = self
-                        .ui
-                        .updater_notification_popup(ids!(popup_updater_notification));
-                    popup.show_failed(cx, &err);
-                    self.ui.popup_notification(ids!(updater_popup)).open(cx);
                 }
                 UpdaterAction::None => {}
             }
@@ -500,6 +485,11 @@ impl MatchEvent for App {
 
             if let UpdaterNotificationPopupAction::InstallAndRestartClicked = action.cast() {
                 ::log::info!("Updater placeholder: install and restart clicked");
+                self.ui.popup_notification(ids!(updater_popup)).close(cx);
+            }
+
+            if let UpdaterNotificationPopupAction::CancelClicked = action.cast() {
+                ::log::info!("Updater placeholder: cancel clicked");
                 self.ui.popup_notification(ids!(updater_popup)).close(cx);
             }
 
